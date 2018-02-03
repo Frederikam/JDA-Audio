@@ -269,6 +269,14 @@ public class AudioWebSocket extends WebSocketAdapter
         {
             LOG.debug("Reason: " + serverCloseFrame.getCloseReason());
             LOG.debug("Close code: " + serverCloseFrame.getCloseCode());
+
+            // Make sure we do proper cleanup if we are shutdown
+            if (shutdown) {
+                AudioManager am = core.getAudioManager(guildId);
+                am.closeAudioConnection();
+                return;
+            }
+
             final int code = serverCloseFrame.getCloseCode();
             final VoiceCode.Close closeCode = VoiceCode.Close.from(code);
             switch (closeCode)
