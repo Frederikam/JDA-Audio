@@ -22,9 +22,12 @@ import net.dv8tion.jda.audio.AudioWebSocket;
 import net.dv8tion.jda.manager.AudioManager;
 import org.json.JSONObject;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class VoiceServerUpdateHandler
 {
     final Core core;
+    private final ConcurrentHashMap<String, String> oldEndpoints = new ConcurrentHashMap<>();
 
     public VoiceServerUpdateHandler(Core core)
     {
@@ -59,8 +62,11 @@ public class VoiceServerUpdateHandler
         AudioManager audioManager = core.getAudioManager(guildId);
         synchronized (audioManager.CONNECTION_LOCK) //Synchronized to prevent attempts to close while setting up initial objects.
         {
-            if (audioManager.isConnected())
+            // Prepare for region change when we are already connected and we are given a new endpoint
+            if (audioManager.isConnected() && !endpoint.equals(oldEndpoints.get(sessionId)))
                 audioManager.prepareForRegionChange();
+
+            oldEndpoints.put(sessionId, endpoint);
             
             AudioWebSocket socket = new AudioWebSocket(audioManager.getListenerProxy(), endpoint, core, guildId, sessionId, token, audioManager.isAutoReconnect());
             AudioConnection connection = new AudioConnection(socket, audioManager.getQueuedAudioConnectionId(), core.getSendFactory());
